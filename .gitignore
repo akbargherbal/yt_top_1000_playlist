@@ -10,6 +10,11 @@ venv/
 # Cookie jars / session credentials (stored outside the repo)
 *cookies*
 
+# Download state, staged audio, and generated reports
+data/
+reports/
+*.part
+
 
 # Byte-compiled / optimized / DLL files
 *.pyc

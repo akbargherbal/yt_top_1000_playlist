@@ -1,0 +1,57 @@
+# Resumable YouTube audio download configuration.
+# CLI flags override environment variables, which override this file.
+
+gcs_prefix: gs://akbar-december-2024-backup/yt_top_500_music_playlist
+local_root: .
+
+# Keep the cookie jar OUTSIDE the repository.
+# Override with --cookies or COOKIES_PATH.
+cookies_path: /content/www.youtube.com_cookies.txt
+require_cookies: true
+
+# Session budget
+max_tracks_per_session: 50
+max_minutes_per_session: 120
+daily_attempt_cap: 200
+
+# Throttling
+delay_min_seconds: 10
+delay_max_seconds: 25
+rate_limit: 3M
+download_timeout_seconds: 900
+
+retries: 3
+fragment_retries: 3
+extractor_retries: 2
+file_access_retries: 3
+
+# Block/retry policy
+max_consecutive_blocks: 2
+cooldown_after_block_minutes: 45
+cooldown_after_rate_limit_minutes: 15
+max_attempts_per_track: 5
+
+# Periodic upload / state snapshot
+upload_interval_minutes: 5
+upload_on_stop: true
+upload_max_pending_files: 10
+snapshot_interval_minutes: 5
+
+# yt-dlp
+preferred_format: "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio"
+js_runtimes: node
+remote_components: "ejs:github"
+impersonate: ""
+extractor_args: ""
+
+# Validation
+min_file_bytes: 102400
+duration_tolerance_seconds: 15
+duration_tolerance_percent: 0.05
+
+# Paths (relative to local_root unless absolute)
+manifest_path: data/manifest.json
+staging_dir: data/staging
+quarantine_dir: data/quarantine
+logs_dir: data/logs
+reports_dir: reports

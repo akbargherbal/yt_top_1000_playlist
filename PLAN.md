@@ -195,23 +195,27 @@ The JSON manifest is the source of truth. GCS is both the backup and the durable
 
 ---
 
-## 5. Proposed repository layout
+## 5. Repository layout
 
 ```text
 /content/yt_top_1000_playlist/
 ├── PLAN.md
+├── README.md
+├── requirements.txt
 ├── top_500_songs.pkl
 ├── download/
+│   ├── __init__.py
+│   ├── config.py
 │   ├── config.yaml
 │   ├── import_songs.py
 │   ├── run_session.py
 │   ├── reconcile.py
+│   ├── downloader.py
 │   ├── verify.py
 │   ├── uploader.py
+│   ├── gcs.py
 │   ├── state.py
-│   ├── report.py
-│   ├── backup_gcs.sh
-│   └── yt-dlp.conf
+│   └── report.py
 ├── data/
 │   ├── manifest.json
 │   ├── manifest.json.bak
@@ -410,6 +414,8 @@ upload_max_pending_files: 10
 snapshot_interval_minutes: 5
 
 preferred_format: "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio"
+js_runtimes: node
+remote_components: "ejs:github"
 ```
 
 ### 7.2 One-track yt-dlp invocation
@@ -423,6 +429,7 @@ yt-dlp \
   --no-playlist \
   --cookies "$COOKIES_PATH" \
   --js-runtimes node \
+  --remote-components ejs:github \
   --format "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio" \
   --output "/content/yt_top_1000_playlist/data/staging/%(id)s.%(ext)s" \
   --write-info-json \
@@ -445,6 +452,7 @@ Notes:
 - `--sleep-interval` is not used as the primary throttle because each process downloads only one track. The orchestrator sleeps **between** tracks with random jitter.
 - `--download-archive` is a second line of defence against duplicate downloads. The JSON manifest remains authoritative.
 - `--js-runtimes node` is included because modern `yt-dlp` YouTube extraction often needs a JavaScript runtime; Node 22 is already present on this VM.
+- `--remote-components ejs:github` is required by recent `yt-dlp` releases to fetch the EJS challenge solver; without it YouTube may report “Requested format is not available”.
 - If bot checks persist, add `--impersonate chrome` (requires `curl_cffi`) and/or a fresher cookies file.
 
 ### 7.3 Inter-track pacing and adaptive backoff
@@ -700,7 +708,7 @@ Do **not** start with all 495. The first 5-track pilot is the cheapest way to di
 
 ---
 
-## 15. Decisions to confirm before implementation
+## 15. Operating decisions
 
 1. **Cookies:** Can you export a fresh Netscape `cookies.txt` from a logged-in YouTube browser session? This is the single biggest determinant of success on a VM.
 2. **Format:** Keep native `m4a`/`webm` (recommended), or transcode everything to MP3/AAC?
@@ -709,10 +717,9 @@ Do **not** start with all 495. The first 5-track pilot is the cheapest way to di
 
 ---
 
-## 16. Planned CLI
+## 16. CLI
 
-The repository does **not** yet contain the `download/` scripts. This is the
-interface to implement. All commands are run from the repository root:
+The `download/` scripts are implemented. All commands are run from the repository root:
 
 ```bash
 cd /content/yt_top_1000_playlist
@@ -723,7 +730,7 @@ Recommended one-time setup:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -U yt-dlp
+python -m pip install -U -r requirements.txt
 ```
 
 `ffmpeg`/`ffprobe` remain system packages.
@@ -771,7 +778,7 @@ python download/run_session.py --config download/config.yaml \
 python download/run_session.py --config download/config.yaml \
   --ranks 1-50
 
-# Retry tracks whose backoff has expired
+# Retry failed/blocked tracks now (ignore backoff)
 python download/run_session.py --config download/config.yaml --retry-failed
 
 # Show what would be attempted, without downloading
@@ -792,7 +799,7 @@ python download/run_session.py --config download/config.yaml --dry-run
 | `--upload-max-pending N` | Force an upload after N pending files. Default 10 |
 | `--ranks RANGE` | Restrict to ranks, e.g. `1-50` or `1,5,10-20` |
 | `--video-id ID` | Download one specific YouTube video |
-| `--retry-failed` | Include retryable failures whose `next_retry_utc` has passed |
+| `--retry-failed` | Retry failed/blocked tracks now, ignoring `next_retry_utc` backoff |
 | `--no-upload` | Download/verify only; skip GCS uploads |
 | `--no-download` | Reconcile/upload only; do not download new tracks |
 | `--dry-run` | Print the selected tracks and settings; download nothing |
