@@ -7,6 +7,57 @@ later VM session continues where the previous one stopped.
 
 **Destination:** `gs://akbar-december-2024-backup/yt_top_500_music_playlist/`
 
+## Top 4 commands
+
+Run all commands from `/content/yt_top_1000_playlist`.
+
+### 1. Start a session (first time)
+
+```bash
+# First time only: build data/manifest.json from the pickle
+python download/import_songs.py --config download/config.yaml
+
+# Start downloading
+python download/run_session.py --config download/config.yaml \
+  --max-tracks 50 --max-minutes 120
+```
+
+### 2. Resume
+
+```bash
+# Same command; it restores/reconciles state and continues automatically
+python download/run_session.py --config download/config.yaml \
+  --max-tracks 50 --max-minutes 120
+```
+
+### 3. Check progress
+
+```bash
+python download/report.py --config download/config.yaml
+```
+
+For a quick “what would run next” check without downloading:
+
+```bash
+python download/run_session.py --config download/config.yaml --dry-run
+```
+
+### 4. Backup / reconcile now
+
+```bash
+# Upload pending files and snapshot state immediately
+python download/uploader.py --config download/config.yaml --once --force
+
+# Re-check local state and GCS objects, then repair
+python download/reconcile.py --config download/config.yaml --check-gcs --fix
+```
+
+On a fresh VM, restore the manifest first:
+
+```bash
+python download/reconcile.py --config download/config.yaml --from-gcs --fix
+```
+
 ## Setup
 
 ```bash
