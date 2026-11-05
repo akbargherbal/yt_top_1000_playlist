@@ -7,6 +7,9 @@ venv/
 # OS / editors
 .DS_Store
 
+# Cookie jars / session credentials (stored outside the repo)
+*cookies*
+
 
 # Byte-compiled / optimized / DLL files
 *.pyc
