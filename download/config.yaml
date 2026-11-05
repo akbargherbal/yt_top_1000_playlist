@@ -10,9 +10,9 @@ cookies_path: /content/www.youtube.com_cookies.txt
 require_cookies: true
 
 # Session budget
-max_tracks_per_session: 50
-max_minutes_per_session: 120
-daily_attempt_cap: 200
+max_tracks_per_session: 200
+max_minutes_per_session: 440
+daily_attempt_cap: 2000
 
 # Throttling
 delay_min_seconds: 10
